@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lolzteam Forum Renamer
 // @namespace    https://lolz.team/
-// @version      1.2.2
+// @version      1.2.3
 // @description  Locally renames Lolzteam forums and subforums
 // @match        https://lolz.team/*
 // @grant        GM_getValue
@@ -28,6 +28,7 @@
         '.ugc',
         '.bbCodeQuote',
         '.quote',
+        '.PageNav',
         '.fr-element',
         '[contenteditable="true"]',
         'textarea',
