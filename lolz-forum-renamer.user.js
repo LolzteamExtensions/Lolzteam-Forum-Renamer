@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lolzteam Forum Renamer
 // @namespace    https://lolz.team/
-// @version      1.2.1
+// @version      1.2.2
 // @description  Locally renames Lolzteam forums and subforums
 // @match        https://lolz.team/*
 // @grant        GM_getValue
@@ -307,6 +307,71 @@
         return text.endsWith(suffix) ? suffix : '';
     }
 
+    function optionPrefix(text) {
+        const match = text.match(/^\s*/);
+        return match ? match[0] : '';
+    }
+
+    function discoverNodeSelectTargets(root) {
+        const selects = collect(root, 'select[name="node_id"]');
+        if (root.nodeType === Node.ELEMENT_NODE && typeof root.closest === 'function') {
+            const chosen = root.closest('.chosen-container');
+            const select = chosen ? chosen.previousElementSibling : null;
+            if (select && select.matches('select[name="node_id"]') && !selects.includes(select)) {
+                selects.push(select);
+            }
+        }
+
+        for (const select of selects) {
+            let optionsChanged = false;
+            for (const option of select.options) {
+                if (!/^\d+$/.test(option.value)) {
+                    continue;
+                }
+                const prefix = optionPrefix(option.textContent);
+                if (option.disabled && !prefix) {
+                    continue;
+                }
+                optionsChanged = markTarget(option, option.value, '', prefix) || optionsChanged;
+            }
+
+            if (optionsChanged) {
+                refreshChosen(select);
+            }
+
+            const chosen = select.nextElementSibling;
+            if (!chosen || !chosen.classList.contains('chosen-container')) {
+                continue;
+            }
+
+            for (const choice of chosen.querySelectorAll('[data-option-array-index]')) {
+                const index = Number.parseInt(choice.getAttribute('data-option-array-index'), 10);
+                const option = select.options[index];
+                if (!option || !option.hasAttribute(ID_ATTRIBUTE)) {
+                    continue;
+                }
+                const label = choice.querySelector('.innerText') || choice.querySelector('span') || choice;
+                markTarget(
+                    label,
+                    option.getAttribute(ID_ATTRIBUTE),
+                    '',
+                    optionPrefix(label.textContent)
+                );
+            }
+
+            const selected = select.options[select.selectedIndex];
+            const selectedLabel = chosen.querySelector('.chosen-single > span');
+            if (selected && selectedLabel && selected.hasAttribute(ID_ATTRIBUTE)) {
+                markTarget(
+                    selectedLabel,
+                    selected.getAttribute(ID_ATTRIBUTE),
+                    '',
+                    optionPrefix(selectedLabel.textContent)
+                );
+            }
+        }
+    }
+
     function discoverFeedOptionTargets(root) {
         const forms = collect(root, '#ExcludeForumsForm');
         if (root.nodeType === Node.ELEMENT_NODE && typeof root.closest === 'function') {
@@ -435,9 +500,9 @@
         }
 
         const previousId = target.getAttribute(ID_ATTRIBUTE);
-        const currentText = target.textContent.trim();
         const currentPrefix = target.getAttribute(PREFIX_ATTRIBUTE) || '';
         const currentSuffix = target.getAttribute(SUFFIX_ATTRIBUTE) || '';
+        const currentText = currentPrefix ? target.textContent : target.textContent.trim();
         let currentName = currentPrefix && currentText.startsWith(currentPrefix)
             ? currentText.slice(currentPrefix.length)
             : currentText;
@@ -531,6 +596,7 @@
         discoverCreateThreadHeaderTargets(root);
         discoverNotificationRulesTargets(root);
         discoverFeedOptionTargets(root);
+        discoverNodeSelectTargets(root);
         discoverCurrentForumTitle();
     }
 
@@ -546,7 +612,7 @@
         }
 
         if (root.nodeType === Node.ELEMENT_NODE && typeof root.closest === 'function') {
-            root = root.closest(`[${ID_ATTRIBUTE}], a[href], [class*="node"], .createThread-header, .notification_rules_block, #ExcludeForumsForm, main#content.forum_view .titleBar`) || root;
+            root = root.closest(`[${ID_ATTRIBUTE}], a[href], [class*="node"], .chosen-container, select[name="node_id"], .createThread-header, .notification_rules_block, #ExcludeForumsForm, main#content.forum_view .titleBar`) || root;
         }
 
         pendingRoots.add(root);
