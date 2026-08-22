@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lolzteam Forum Renamer
 // @namespace    https://lolz.team/
-// @version      1.2.3
+// @version      1.2.4
 // @description  Locally renames Lolzteam forums and subforums
 // @match        https://lolz.team/*
 // @grant        GM_getValue
@@ -801,7 +801,7 @@
                 box-sizing: border-box;
                 width: min(100%, 24rem);
                 min-width: 8rem;
-                margin: -0.25rem 0;
+                margin: 0;
                 padding: 0.2rem 0.4rem;
                 color: inherit;
                 font: inherit;
